@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-// const { isFunction } = require("util");
 
 const copyRecursive = (src, dest) => {
   //true if path exists
