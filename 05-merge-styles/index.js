@@ -1,27 +1,30 @@
-const fs = require("fs");
 const path = require("path");
+const { readdir, lstat } = require("node:fs/promises");
+const fs = require("fs");
 
 const stylesFolder = path.resolve(__dirname, "styles");
 const bundleFolder = path.resolve(__dirname, "project-dist", "bundle.css");
 const writeStream = fs.createWriteStream(bundleFolder);
 
-fs.readdir(stylesFolder, (err, files) => {
-  if (err) {
-    console.log(err);
-  }
-  files.forEach((file) => {
-    let fullPath = path.resolve(__dirname, "styles", `${file}`);
-    const readStream = fs.createReadStream(path.resolve(fullPath), {
-      encoding: "utf-8",
-    });
+const merge = async (src) => {
+  try {
+    const files = await readdir(src);
 
-    if (
-      fs.lstatSync(fullPath).isFile() &&
-      path.basename(fullPath).split(".")[1] === "css"
-    ) {
-      readStream.on("data", (chunk) => {
-        writeStream.write(`${chunk}\n`);
+    files.forEach(async (file) => {
+      let fullPath = path.join(src, file);
+      const readStream = fs.createReadStream(path.resolve(fullPath), {
+        encoding: "utf-8",
       });
-    }
-  });
-});
+
+      let isFile = await lstat(fullPath).then((data) => data.isFile());
+      if (isFile && path.basename(fullPath).split(".")[1] === "css") {
+        readStream.on("data", (chunk) => {
+          writeStream.write(`${chunk}\n`);
+        });
+      }
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
+merge(stylesFolder);
