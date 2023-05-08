@@ -1,28 +1,39 @@
-const fs = require("fs");
 const path = require("path");
+const {
+  readdir,
+  mkdir,
+  copyFile,
+  access,
+  unlink,
+} = require("node:fs/promises");
 
-const copyRecursive = (src, dest) => {
-  //true if path exists
-  const exist = fs.existsSync(src);
-  //true if object is file or directory
-  const stats = exist && fs.statSync(src);
-  //true if object is direcrory
-  const isDirectory = stats && stats.isDirectory();
-  //if object exists and its a directory
-  if (isDirectory) {
-    //create destination directory if destination directory doesn't exist already
-    if (!fs.existsSync(dest)) fs.mkdirSync(dest);
-    //copy all files from start directory to destination directory
-    fs.readdirSync(src).forEach((childItemName) => {
-      copyRecursive(
-        path.join(src, childItemName),
-        path.join(dest, childItemName)
-      );
+const copyRecursive = async (src, dest) => {
+  try {
+    await access(dest);
+  } catch (e) {
+    await mkdir(dest);
+  }
+
+  try {
+    const destfiles = await readdir(dest);
+    destfiles.forEach(async (file) => {
+      try {
+        await unlink(path.join(dest, file));
+      } catch (e) {
+        console.log(e);
+      }
     });
-    //if objext exists and its a file
-  } else {
-    //create destnation file if destinationn file doens't exist
-    if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
+
+    const srcfiles = await readdir(src);
+    srcfiles.forEach(async (file) => {
+      try {
+        await copyFile(path.join(src, file), path.join(dest, file));
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  } catch (e) {
+    console.log(e);
   }
 };
 
